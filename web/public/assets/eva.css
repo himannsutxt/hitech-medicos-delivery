@@ -1,0 +1,107 @@
+/* Hitech Medicos Delivery — Eva UI design system */
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:#f4f7fc;color:#14254a;font-size:13px}
+a{color:#2f6fed;text-decoration:none}a:hover{text-decoration:underline}
+.hm-top{background:#fff;border-bottom:1px solid #e4e9f2;display:flex;align-items:center;gap:14px;padding:10px 20px;position:sticky;top:0;z-index:50}
+.hm-brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:15px;color:#14254a}
+.hm-brand .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#6b5cf0,#2f6fed);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px}
+.hm-brand small{display:block;font-weight:600;color:#6f7d95;font-size:11px}
+.hm-user{margin-left:auto;display:flex;align-items:center;gap:10px;color:#6f7d95}
+.hm-user b{color:#14254a}
+.eva-wrap{--ink:#14254a;--muted:#6f7d95;--line:#e4e9f2;--bg:#f4f7fc;--card:#fff;
+ --blue:#2f6fed;--green:#1fb57a;--amber:#f0a23a;--red:#ec5b6f;--purple:#8b63f0;--teal:#20b2c4;--slate:#7b8aa3;
+ --grad:linear-gradient(135deg,#6b5cf0,#2f6fed);--radius:12px;--shadow:0 2px 8px rgba(20,37,74,.04);
+ color:var(--ink);font-size:13px;background:var(--bg);padding:14px 20px 30px;min-height:calc(100vh - 60px);max-width:1500px;margin:0 auto}
+.eva-wrap *{box-sizing:border-box}
+.eva-nav{display:flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:6px;margin-bottom:16px;box-shadow:var(--shadow);flex-wrap:wrap}
+.eva-nav a{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:8px;color:#33415e;font-weight:600;text-decoration:none}
+.eva-nav a:hover{background:#f2f5fa;color:var(--ink);text-decoration:none}
+.eva-nav a.active{background:var(--grad);color:#fff}
+.eva-nav .ver{margin-left:auto;padding:0 10px;color:var(--muted);font-size:12px}
+.eva-nav .badge{background:var(--red);color:#fff;border-radius:999px;padding:1px 7px;font-size:11px}
+.eva-nav a.active .badge{background:#fff;color:var(--red)}
+.page-title{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 14px}
+.page-title h1{font-size:20px;margin:0;font-weight:800}
+.page-title .sub{color:var(--muted);font-size:12px;margin-top:2px}
+.eva-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);min-width:0;margin-bottom:14px}
+.eva-h{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.eva-h h4{margin:0;font-size:15px;font-weight:700;color:var(--ink)}
+.eva-h h4 i{color:var(--purple);margin-right:6px}
+.eva-h a.more{font-size:12px;font-weight:600;color:var(--blue)}
+.eva-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:14px}
+.eva-kpi{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);display:flex;gap:12px;align-items:center}
+.eva-kpi .ic{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;flex:none}
+.eva-kpi .v{font-size:22px;font-weight:800;line-height:1.1}
+.eva-kpi .l{color:var(--muted);font-size:12px}
+.eva-kpi.blue .ic{background:var(--blue)}.eva-kpi.green .ic{background:var(--green)}.eva-kpi.amber .ic{background:var(--amber)}
+.eva-kpi.red .ic{background:var(--red)}.eva-kpi.purple .ic{background:var(--purple)}.eva-kpi.teal .ic{background:var(--teal)}.eva-kpi.slate .ic{background:var(--slate)}
+.eva-pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap}
+.eva-pill.ok{background:#e3f7ee;color:#11845a}.eva-pill.warn{background:#fff3e0;color:#b36b00}
+.eva-pill.bad{background:#fde8ec;color:#c2304a}.eva-pill.info{background:#e7efff;color:#2459c9}
+.eva-pill.muted{background:#eef1f6;color:#5b6880}.eva-pill.purple{background:#f0eafe;color:#6a3fe0}
+.eva-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:8px;padding:7px 13px;font-weight:600;font-size:13px;cursor:pointer;text-decoration:none;font-family:inherit;line-height:1.3}
+.eva-btn:hover{background:#f2f5fa;text-decoration:none}
+.eva-btn.primary{background:var(--grad);border:0;color:#fff}
+.eva-btn.success{background:var(--green);border:0;color:#fff}
+.eva-btn.danger{background:#fff;border-color:#f6c2cc;color:var(--red)}
+.eva-btn.sm{padding:4px 9px;font-size:12px}
+.eva-btn[disabled]{opacity:.6;cursor:not-allowed}
+.eva-filters{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:12px}
+.eva-filters label{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-bottom:3px}
+.eva-filters input,.eva-filters select{height:34px;border:1px solid var(--line);border-radius:8px;padding:0 10px;background:#fff;min-width:140px;font-family:inherit;font-size:13px}
+.eva-filters .count{margin-left:auto;color:var(--muted);font-size:12px}
+.eva-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+.eva-table{width:100%;border-collapse:collapse;background:#fff}
+.eva-table th{background:#f7f9fd;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.03em;font-weight:700;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left}
+.eva-table td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+.eva-table tr:hover td{background:#fafbfe}
+.eva-table th a.sort{color:inherit;text-decoration:none}
+.eva-table th a.sort:after{content:' \2195';opacity:.35}
+.eva-table th a.sort.asc:after{content:' \2191';opacity:1}
+.eva-table th a.sort.desc:after{content:' \2193';opacity:1}
+.eva-table td.num,.eva-table th.num{text-align:right}
+.eva-table tr.err td{background:#fff6f7}
+.eva-empty{text-align:center;color:var(--muted);padding:30px}
+.eva-pager{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;color:var(--muted);font-size:12px}
+.eva-pager .pages{display:flex;gap:4px;flex-wrap:wrap}
+.eva-pager .pages a,.eva-pager .pages span{padding:5px 10px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink)}
+.eva-pager .pages span.cur{background:var(--grad);color:#fff;border:0}
+.eva-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px;flex-wrap:wrap}
+.eva-tabs a{padding:9px 14px;border-radius:8px 8px 0 0;color:var(--muted);font-weight:600;text-decoration:none}
+.eva-tabs a.active{color:var(--purple);box-shadow:inset 0 -2px 0 var(--purple)}
+.eva-field{display:grid;grid-template-columns:240px 1fr;gap:12px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.eva-field>label{font-weight:600;padding-top:7px}
+.eva-field .help{color:var(--muted);font-size:12px;margin-top:4px}
+.eva-field input[type=text],.eva-field input[type=number],.eva-field input[type=email],.eva-field input[type=password],.eva-field input[type=date],.eva-field select,.eva-field textarea,.inp{width:100%;max-width:460px;height:36px;border:1px solid var(--line);border-radius:8px;padding:0 10px;font-family:inherit;font-size:13px;background:#fff}
+.eva-field textarea{height:80px;padding:8px 10px}
+.req:after{content:' *';color:var(--red)}
+.eva-alert{border-radius:10px;padding:10px 14px;margin-bottom:12px;font-weight:600}
+.eva-alert.ok{background:#e3f7ee;color:#11845a}.eva-alert.bad{background:#fde8ec;color:#c2304a}.eva-alert.warn{background:#fff3e0;color:#b36b00}.eva-alert.info{background:#e7efff;color:#2459c9}
+.grid2{display:grid;grid-template-columns:2fr 1fr;gap:14px}.grid2e{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.map{height:420px;border-radius:10px;border:1px solid var(--line);z-index:1}
+.map.sm{height:260px}
+.muted{color:var(--muted)}.small{font-size:12px}.bold{font-weight:700}.nowrap{white-space:nowrap}
+.kv{display:grid;grid-template-columns:150px 1fr;gap:6px 12px}.kv dt{color:var(--muted);font-weight:600}.kv dd{margin:0}
+.timeline{list-style:none;margin:0;padding:0}.timeline li{display:flex;gap:12px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.timeline .t{width:130px;color:var(--muted);flex:none}.timeline .dot{width:10px;height:10px;border-radius:50%;background:var(--purple);margin-top:4px;flex:none}
+.proofs{display:flex;gap:8px;flex-wrap:wrap}.proofs img{width:120px;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.bulk{display:none;align-items:center;gap:8px;background:#f0eafe;border-radius:10px;padding:8px 12px;margin-bottom:10px;flex-wrap:wrap}
+.bulk.on{display:flex}
+.bulk select,.bulk input{height:32px;border:1px solid var(--line);border-radius:8px;padding:0 8px}
+.scanbox{font-size:22px;height:56px !important;max-width:520px !important}
+.dot-live{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#eef0ff,#f4f7fc)}
+.login-card{width:380px;max-width:92vw;background:#fff;border:1px solid #e4e9f2;border-radius:16px;padding:28px;box-shadow:0 10px 30px rgba(20,37,74,.08)}
+.login-card h2{margin:12px 0 4px;font-size:20px}.login-card p{color:#6f7d95;margin:0 0 18px}
+.login-card input{width:100%;height:42px;border:1px solid #e4e9f2;border-radius:10px;padding:0 12px;margin-bottom:12px;font-size:14px}
+.login-card button{width:100%;height:42px;justify-content:center}
+.help-list li{margin-bottom:6px}
+code{background:#f2f5fa;padding:1px 5px;border-radius:5px}
+@media (max-width:1000px){.grid2,.grid2e{grid-template-columns:1fr}}
+@media (max-width:767px){.eva-wrap{padding:10px 10px 24px}.eva-nav{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}.eva-nav::-webkit-scrollbar{display:none}.eva-nav a{white-space:nowrap;flex:none}.eva-field{grid-template-columns:1fr}.eva-nav .ver{display:none}
+ .hm-top{padding:8px 10px}.hm-user span.name{display:none}
+ .eva-table.stack thead{display:none}.eva-table.stack tr{display:block;border-bottom:1px solid var(--line)}
+ .eva-table.stack td{display:flex;justify-content:space-between;gap:10px;border:0;padding:6px 12px;text-align:right}
+ .eva-table.stack td:before{content:attr(data-label);color:var(--muted);font-weight:600;margin-right:10px;text-align:left}
+ .eva-filters input,.eva-filters select{min-width:0;width:100%}.eva-filters>div{flex:1 1 45%}
+ .kv{grid-template-columns:1fr}.map{height:300px}}

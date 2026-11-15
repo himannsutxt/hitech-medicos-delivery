@@ -1,0 +1,8 @@
+# Pass the Authorization header to PHP (needed by the rider app on Apache/Plesk)
+RewriteEngine On
+RewriteCond %{HTTP:Authorization} .
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+Options -Indexes
+<FilesMatch "\.(sql|log|md|json|lock)$">
+  Require all denied
+</FilesMatch>

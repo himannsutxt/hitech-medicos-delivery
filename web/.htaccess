@@ -1,0 +1,3 @@
+# Safety net if the whole folder is uploaded to the web root: block everything outside /public
+RewriteEngine On
+RewriteRule ^(?!public/) - [F,L]

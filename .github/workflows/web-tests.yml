@@ -1,0 +1,33 @@
+name: Website tests
+
+on:
+  push:
+    branches: [main]
+    paths: ['web/**', '.github/workflows/web-tests.yml']
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: hmd_test
+          MARIADB_USER: hmd
+          MARIADB_PASSWORD: hmdpass
+        ports: ['3306:3306']
+        options: --health-cmd="healthcheck.sh --connect" --health-interval=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, gd, curl, mbstring, fileinfo
+          tools: phpunit:9.6
+      - name: Lint
+        run: find web -name '*.php' -not -path '*/vendor/*' -print0 | xargs -0 -n1 php -l
+      - name: PHPUnit
+        working-directory: web
+        run: phpunit tests

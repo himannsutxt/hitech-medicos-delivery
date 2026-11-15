@@ -1,0 +1,21 @@
+# secrets and runtime data
+*.jks
+*.keystore
+secrets/
+web/app/config.php
+web/storage/uploads/*
+web/storage/logs/*
+web/storage/backups/*
+!web/storage/**/.gitkeep
+web/vendor/
+web/composer.lock
+# flutter generated
+app/android/
+app/ios/
+app/build/
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/.metadata
+app/pubspec.lock
+qa/
