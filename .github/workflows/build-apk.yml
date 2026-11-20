@@ -60,7 +60,7 @@ jobs:
       - name: Build APK
         env:
           HMD_KEYSTORE_PASSWORD: ${{ secrets.HMD_KEYSTORE_PASSWORD }}
-        run: flutter build apk --release --build-name 1.0.0 --build-number ${{ github.run_number }}
+        run: flutter build apk --release --build-name 1.2.0 --build-number ${{ github.run_number }}
 
       - name: Rename
         run: cp build/app/outputs/flutter-apk/app-release.apk "HitechMedicosDelivery-1.0.0-build${{ github.run_number }}.apk"

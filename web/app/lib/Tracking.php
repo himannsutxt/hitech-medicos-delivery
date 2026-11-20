@@ -44,14 +44,30 @@ final class Tracking
         // starting from the rider's last known position so a glitch can't move them across the city.
         if ($cands) {
             $anchor = [];
-            if ($rider['last_lat'] !== null && $rider['last_seen_at'] !== null) {
-                $anchor[] = ['seq' => PHP_INT_MIN, 'lat' => (float)$rider['last_lat'], 'lng' => (float)$rider['last_lng'], 'accuracy' => 0.0, 'ts' => min(strtotime($rider['last_seen_at'] . ' UTC'), min(array_column($cands, 'ts')) - 1), 'anchor' => true];
+            // Anchor on the phone time of the last accepted fix. (v1.1 used the server receive time,
+            // which made any movement between two sync batches look like a 300+ km/h jump.)
+            if ($rider['last_lat'] !== null && !empty($rider['last_fix_at'])) {
+                $fixTs = strtotime($rider['last_fix_at'] . ' UTC');
+                if ($fixTs < min(array_column($cands, 'ts'))) {
+                    $anchor[] = ['seq' => PHP_INT_MIN, 'lat' => (float)$rider['last_lat'], 'lng' => (float)$rider['last_lng'], 'accuracy' => 0.0, 'ts' => $fixTs, 'anchor' => true];
+                }
             }
-            $kept = Geo::filterPoints(array_merge($anchor, $cands), (float)Settings::get('gps_min_accuracy'), (float)Settings::get('gps_max_speed'));
+            // Live position accepts indoor accuracy (often 60-200 m); KM keeps the strict limit.
+            $liveAcc = max((float)Settings::get('gps_min_accuracy'), (float)Settings::get('live_max_accuracy'));
+            $kept = Geo::filterPoints(array_merge($anchor, $cands), $liveAcc, (float)Settings::get('gps_max_speed'));
             $last = end($kept);
             if ($last && empty($last['anchor'])) {
                 $latest = $last;
             }
+        }
+        if ($stored > 0 || $cands) {
+            $newest = $cands ? $cands[array_key_last($cands)] : null;
+            foreach ($cands as $c) {
+                if ($newest === null || $c['ts'] >= $newest['ts']) {
+                    $newest = $c;
+                }
+            }
+            Db::update('hm_rider', ['last_point_at' => Fmt::nowUtc(), 'last_accuracy' => $newest ? min(99999, $newest['accuracy']) : null], 'rider_id=?', [$rider['rider_id']]);
         }
         if (!$latest) {
             Db::update('hm_rider', ['last_seen_at' => Fmt::nowUtc()], 'rider_id=?', [$rider['rider_id']]);
@@ -62,6 +78,7 @@ final class Tracking
                 'last_speed' => is_numeric($latest['speed']) ? round((float)$latest['speed'] * 3.6, 1) : null,
                 'last_battery' => is_numeric($latest['battery']) ? (int)$latest['battery'] : null,
                 'last_seen_at' => Fmt::nowUtc(),
+                'last_fix_at' => gmdate('Y-m-d H:i:s', $latest['ts']),
             ], 'rider_id=?', [$rider['rider_id']]);
         }
         if ($mock) {

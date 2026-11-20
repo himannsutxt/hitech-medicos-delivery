@@ -17,6 +17,7 @@ $body = '<div class="grid2e"><div class="eva-card"><div class="eva-h"><h4><i cla
     . '<div class="eva-alert info">Server address for the app: <code>' . $e($api) . '</code></div></div>'
     . '<div class="eva-card"><div class="eva-h"><h4><i class="fa-solid fa-circle-question"></i> Common questions</h4></div><dl class="kv" style="grid-template-columns:1fr">'
     . '<dt>Where do I see riders live?</dt><dd>Live Tracking in the top menu. Click a rider to follow them with their recent path. Locations come only from the rider app while on duty.</dd>'
+    . '<dt>A rider\'s live location is not coming. What do I check?</dt><dd>Open the rider (Riders → name) and look at the <b>App health</b> card. It shows the last GPS received and lists each problem with its fix. The usual ones: Location permission not set to "Allow all the time", GPS switched off, battery saver restricting the app (on Xiaomi/Redmi/Vivo/Oppo also turn on Autostart), no internet, or an old app version. The Riders list filter "App health: Only with problems" shows everyone affected.</dd>'
     . '<dt>What do the (i) icons do?</dt><dd>Hover (or tap on a phone) to see what a field, filter, column or button does.</dd>'
     . '<dt>A rider got a new phone</dt><dd>Riders → open the rider → Reset phone. They can then log in on the new phone.</dd>'
     . '<dt>Rider forgot PIN / account locked</dt><dd>Open the rider → type a new PIN → Set new PIN.</dd>'

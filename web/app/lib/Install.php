@@ -18,6 +18,7 @@ final class Install
         if (!Db::val('SELECT 1 FROM hm_warehouse')) {
             Db::insert('hm_warehouse', ['name' => 'Main Store', 'radius_m' => 200, 'status' => 1, 'created_at' => $now]);
         }
+        Db::run('INSERT IGNORE INTO hm_setting (skey, svalue, updated_at) VALUES ("schema_version", ?, ?)', [(string)Migrate::CURRENT, $now]);
         foreach (['daily_summary', 'gps_offline_check', 'auto_end_duty', 'retention_cleanup', 'notify'] as $j) {
             Db::run('INSERT IGNORE INTO hm_job_run (job, failures) VALUES (?,0)', [$j]);
         }

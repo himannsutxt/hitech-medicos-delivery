@@ -4,7 +4,7 @@ use HMD\{Db, Fmt, ListQuery, Perm, Ui, Auth, Validate, Ledger};
 
 $u = Auth::user();
 $f = ['q' => Validate::text((string)($_GET['q'] ?? ''), 60), 'state' => in_array($_GET['state'] ?? '', ['active', 'disabled', 'deleted'], true) ? $_GET['state'] : 'active',
-    'live' => (string)($_GET['live'] ?? '')];
+    'live' => (string)($_GET['live'] ?? ''), 'health' => ($_GET['health'] ?? '') === 'issues' ? 'issues' : ''];
 $where = [];
 $p = [];
 $where[] = match ($f['state']) { 'deleted' => 'r.deleted_at IS NOT NULL', 'disabled' => 'r.deleted_at IS NULL AND r.status=0', default => 'r.deleted_at IS NULL AND r.status=1' };
@@ -20,12 +20,17 @@ if (isset($lives[$f['live']])) {
 } else {
     $f['live'] = '';
 }
+if ($f['health'] === 'issues') {
+    // Same checks as RiderHealth that can be done in SQL (phone-reported settings)
+    $where[] = "(r.device_id IS NULL OR r.gps_on=0 OR (r.loc_permission IS NOT NULL AND r.loc_permission<>'always') OR r.battery_exempt=0 OR r.phone_pending>3 OR (r.app_version IS NOT NULL AND r.app_version<>?))";
+    $p[] = \HMD\RiderHealth::LATEST_APP;
+}
 $w = ' WHERE ' . implode(' AND ', $where);
 $q = ListQuery::from($_GET, ['r.name', 'r.employee_code', 'r.live_status', 'r.last_seen_at', 'r.licence_expiry', 'r.created_at'], 'r.name', 'ASC');
 $base = ['r' => 'riders'] + $f;
 if (($_GET['export'] ?? '') === 'csv') {
-    $rows = Db::all("SELECT r.employee_code, r.name, r.mobile, r.vehicle_type, r.vehicle_number, r.licence_number, r.licence_expiry, r.capacity, r.cod_limit, r.live_status, r.joined_on FROM hm_rider r $w ORDER BY {$q->sort} {$q->order}", $p);
-    Ui::csv('riders.csv', ['Employee code', 'Name', 'Mobile', 'Vehicle type', 'Vehicle no', 'Licence no', 'Licence expiry', 'Capacity', 'COD limit', 'Status', 'Joined'], $rows);
+    $rows = Db::all("SELECT r.employee_code, r.name, r.mobile, r.vehicle_type, r.vehicle_number, r.licence_number, r.licence_expiry, r.capacity, r.cod_limit, r.live_status, r.app_version, r.loc_permission, r.gps_on, r.battery_exempt, r.last_point_at, r.joined_on FROM hm_rider r $w ORDER BY {$q->sort} {$q->order}", $p);
+    Ui::csv('riders.csv', ['Employee code', 'Name', 'Mobile', 'Vehicle type', 'Vehicle no', 'Licence no', 'Licence expiry', 'Capacity', 'COD limit', 'Status', 'App version', 'Location permission', 'GPS on', 'Battery unrestricted', 'Last GPS (UTC)', 'Joined'], $rows);
 }
 $total = (int)Db::val("SELECT COUNT(*) FROM hm_rider r $w", $p);
 $rows = Db::all("SELECT r.* FROM hm_rider r $w" . $q->sql(), $p);
@@ -38,7 +43,7 @@ foreach ($rows as $r) {
         . '<td data-label="Mobile">' . Ui::e($r['mobile']) . '</td><td data-label="Vehicle">' . Ui::e(trim(($r['vehicle_type'] ?? '') . ' ' . ($r['vehicle_number'] ?? ''))) . '</td>'
         . '<td data-label="Live"><span class="dot-live" style="background:' . Ui::liveColor($r['live_status']) . '"></span>' . Ui::e(Ui::liveLabel($r['live_status'])) . '</td>'
         . '<td data-label="Cash in hand" class="num">' . ($cash > 0 ? '<b>' . Fmt::inr($cash) . '</b>' : Fmt::inr(0)) . '</td>'
-        . '<td data-label="Licence expiry">' . $expPill . '</td><td data-label="Phone">' . ($r['device_id'] ? '<span class="eva-pill ok">Registered</span>' : '<span class="eva-pill muted">Not yet</span>') . '</td>'
+        . '<td data-label="Licence expiry">' . $expPill . '</td><td data-label="App health">' . Ui::healthBadge($r) . '</td>'
         . '<td data-label="Last seen">' . ($r['last_seen_at'] ? Fmt::dt($r['last_seen_at']) : '—') . '</td>'
         . '<td>' . (Perm::has($u, 'riders.edit') && !$r['deleted_at'] ? '<a class="eva-btn sm" href="?r=rider_edit&id=' . (int)$r['rider_id'] . '"><i class="fa-solid fa-pen"></i> Edit</a>' : '') . '</td></tr>';
 }
@@ -52,8 +57,9 @@ $tabs .= '</div>';
 $body = '<div class="eva-card">' . $tabs . Ui::presets('riders', $base) . '<form class="eva-filters" method="get"><input type="hidden" name="r" value="riders"><input type="hidden" name="state" value="' . Ui::e($f['state']) . '">'
     . '<div><label>Search</label><input name="q" value="' . Ui::e($f['q']) . '" placeholder="Name, mobile, code, vehicle"></div>'
     . '<div><label>Live status</label><select name="live">' . Ui::options($lives, $f['live'], 'Any') . '</select></div>'
+    . '<div><label>App health' . Ui::tip('Show only riders whose phone has a problem that can stop live location.') . '</label><select name="health">' . Ui::options(['issues' => 'Only with problems'], $f['health'], 'Any') . '</select></div>'
     . '<button class="eva-btn primary"><i class="fa-solid fa-filter"></i> Filter</button><a class="eva-btn" href="?r=riders">Reset</a><span class="count">' . $total . ' riders</span></form>'
-    . '<div class="eva-table-wrap"><table class="eva-table stack"><thead><tr>' . $th('Rider', 'r.name') . '<th>Mobile</th><th>Vehicle</th>' . $th('Live', 'r.live_status') . '<th class="num">Cash in hand</th>' . $th('Licence expiry', 'r.licence_expiry') . '<th>Phone</th>' . $th('Last seen', 'r.last_seen_at') . '<th></th></tr></thead><tbody>' . $tr . '</tbody></table></div>'
+    . '<div class="eva-table-wrap"><table class="eva-table stack"><thead><tr>' . $th('Rider', 'r.name') . '<th>Mobile</th><th>Vehicle</th>' . $th('Live', 'r.live_status') . '<th class="num">Cash in hand</th>' . $th('Licence expiry', 'r.licence_expiry') . '<th' . Ui::t('Problems on the rider\'s phone that stop live location (permission, GPS, battery saver, old app). Hover a badge to see them; open the rider for fixes.') . '>App health</th>' . $th('Last seen', 'r.last_seen_at') . '<th></th></tr></thead><tbody>' . $tr . '</tbody></table></div>'
     . Ui::pager($total, $q, $base) . '</div>';
 $actions = '<a class="eva-btn" href="' . Ui::e(Ui::url($base + ['export' => 'csv'])) . '"><i class="fa-solid fa-download"></i> Export CSV</a> ' . (Perm::has($u, 'riders.edit') ? '<a class="eva-btn primary" href="?r=rider_edit"><i class="fa-solid fa-user-plus"></i> Add rider</a>' : '');
 Ui::page('Riders', 'riders', $body, 'Delivery staff who use the Android app.', $actions);

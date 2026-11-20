@@ -18,6 +18,7 @@ if (!App::installed()) {
     exit;
 }
 date_default_timezone_set('UTC');
+\HMD\Migrate::run();
 
 $path = (string)($_GET['p'] ?? ($_SERVER['PATH_INFO'] ?? ''));
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';

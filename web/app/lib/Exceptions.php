@@ -16,6 +16,7 @@ final class Exceptions
         'duty_auto_ended' => 'Duty auto-ended (forgot END DUTY)',
         'sla_breached' => 'Delivery SLA breached',
         'no_call_before_fail' => 'Failed without calling customer',
+        'location_permission' => 'Location not allowed "all the time"',
     ];
 
     /** Raises an exception unless the same open one already exists for this rider/order. */

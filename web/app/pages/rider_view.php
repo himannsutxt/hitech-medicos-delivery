@@ -70,6 +70,7 @@ if (Perm::has($u, 'riders.edit')) {
 $body .= '<div class="grid2"><div class="eva-card"><div class="eva-h"><h4><i class="fa-solid fa-route"></i> Route on ' . date('d-m-Y', strtotime($day)) . '</h4><span class="muted small">' . count($route) . ' GPS points · green = delivered, red = not delivered</span></div>'
     . (Perm::has($u, 'gps.history') ? '<div id="rmap" class="map"></div>' . Ui::mapNote() : '<div class="eva-empty">You do not have permission to view route history.</div>') . '</div>'
     . '<div><div class="eva-card"><div class="eva-h"><h4><i class="fa-solid fa-id-badge"></i> Profile</h4>' . (Perm::has($u, 'riders.edit') && !$r['deleted_at'] ? '<a class="more" href="?r=rider_edit&id=' . $id . '">Edit</a>' : '') . '</div>' . $info . '<div style="margin-top:12px">' . $act . '</div></div>'
+    . Ui::healthPanel($r)
     . '<div class="eva-card"><div class="eva-h"><h4><i class="fa-solid fa-list-ol"></i> Stops</h4></div><div class="eva-table-wrap"><table class="eva-table stack"><thead><tr><th>Time</th><th>Order</th><th>Result</th></tr></thead><tbody>' . $stopRows . '</tbody></table></div></div></div></div>';
 $js = Perm::has($u, 'gps.history') ? '<script nonce="' . HMD_NONCE . '">HMMap.ready(function(){var route=' . json_encode($route) . ',stops=' . json_encode($stopPts) . ';
 var m=HMMap.create("rmap",{center:route.length?route[0]:(stops.length?[stops[0].lat,stops[0].lng]:[28.4595,77.0266]),zoom:12}),b=[];

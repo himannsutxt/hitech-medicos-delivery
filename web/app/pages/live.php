@@ -30,7 +30,7 @@ $body = '<div class="live-grid">'
 $css = '<style>.live-grid{display:grid;grid-template-columns:360px 1fr;gap:14px;align-items:start}.live-side{max-height:calc(100vh - 150px);display:flex;flex-direction:column}.live-list{overflow-y:auto;flex:1;margin:0 -6px}'
     . '.live-map{height:calc(100vh - 230px);min-height:420px}.lv-item{display:flex;gap:10px;padding:10px 8px;border-radius:10px;cursor:pointer;border:1px solid transparent}.lv-item:hover{background:#f6f8fd}.lv-item.on{background:#f0eafe;border-color:#d8ccfb}'
     . '.lv-dot{width:12px;height:12px;border-radius:50%;margin-top:4px;flex:none;box-shadow:0 0 0 3px #fff,0 0 0 4px #e4e9f2}.lv-name{font-weight:700}.lv-meta{color:#6f7d95;font-size:12px;line-height:1.5}.lv-place{font-size:12px;color:#33415e}'
-    . '.live-counts{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.live-counts span{font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;background:#eef1f6;color:#5b6880}'
+    . '.lv-warn{font-size:12px;color:#b36b00;background:#fff3e0;border-radius:6px;padding:3px 6px;margin:3px 0}.lv-warn.bad{color:#c2304a;background:#fde8ec}.lv-warn a{font-weight:700}.live-counts{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.live-counts span{font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;background:#eef1f6;color:#5b6880}'
     . '@media (max-width:1000px){.live-grid{grid-template-columns:1fr}.live-side{max-height:none}.live-list{max-height:320px}.live-map{height:60vh;min-height:320px}}</style>';
 
 $js = '<script nonce="' . HMD_NONCE . '">HMMap.ready(function(){
@@ -48,7 +48,7 @@ var pk=function(r){return r.lat==null?"":r.lat.toFixed(3)+","+r.lng.toFixed(3);}
 var h="";list.forEach(function(r){var pl=places[r.id],place=(pl&&pl.k===pk(r)&&pl.n)?pl.n:(r.lat==null?"No location yet":(r.lat.toFixed(5)+", "+r.lng.toFixed(5)));
 h+="<div class=\\"lv-item"+(follow===r.id?" on":"")+"\\" data-id=\\""+r.id+"\\" tabindex=\\"0\\" title=\\"Click to follow "+esc(r.name)+" on the map\\"><span class=\\"lv-dot\\" style=\\"background:"+r.color+"\\"></span><div style=\\"min-width:0;flex:1\\"><div class=\\"lv-name\\">"+esc(r.name)+" <span class=\\"lv-meta\\">"+esc(r.code)+"</span></div>"
 +"<div class=\\"lv-place\\"><i class=\\"fa-solid fa-location-dot\\" style=\\"color:#9aa5b8\\"></i> "+esc(place)+"</div>"
-+"<div class=\\"lv-meta\\">"+esc(r.status)+(r.order?" · "+esc(r.order):"")+" · "+r.speed+" km/h · "+(r.battery==null?"—":r.battery+"%")+" · "+esc(r.ago)+"</div></div></div>";});
++(r.issues&&r.issues.length?"<div class=\\"lv-warn "+(r.issues.some(function(x){return x.level==="bad";})?"bad":"")+"\\" title=\\""+esc(r.issues.map(function(x){return x.title;}).join(" • "))+"\\"><i class=\\"fa-solid fa-triangle-exclamation\\"></i> "+esc(r.issues[0].title)+(r.issues.length>1?" (+"+(r.issues.length-1)+" more)":"")+" <a href=\\"?r=rider&id="+r.id+"\\">Fix</a></div>":"")+"<div class=\\"lv-meta\\">"+esc(r.status)+(r.order?" · "+esc(r.order):"")+" · "+r.speed+" km/h · "+(r.battery==null?"—":r.battery+"%")+" · "+esc(r.ago)+"</div></div></div>";});
 document.getElementById("lv-list").innerHTML=h||"<div class=\\"eva-empty\\">No riders match. Riders appear here after they log in to the app and start duty.</div>";
 var c={};riders.forEach(function(r){c[r.status]=(c[r.status]||0)+1;});document.getElementById("lv-counts").innerHTML=Object.keys(c).map(function(k){return "<span>"+esc(k)+": "+c[k]+"</span>";}).join("");
 if(firstFit&&pts.length&&!follow){map.fit(pts,15);firstFit=false;}

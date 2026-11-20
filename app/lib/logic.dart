@@ -74,3 +74,6 @@ String? normaliseServer(String input) {
 
 /// Errors worth retrying later (offline / server busy) vs. rejected by the server.
 bool isRetryable(int status) => status == 0 || status == 408 || status == 429 || status >= 500;
+
+/// App version reported to the server (shown in the website's App health panel).
+const String kAppVersion = '1.2.0';

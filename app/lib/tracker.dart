@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart' as ph;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api.dart';
 import 'logic.dart';
@@ -147,12 +148,23 @@ class Tracker {
       _batteryLevel = await _battery.batteryLevel;
     } catch (_) {}
     final perm = await Geolocator.checkPermission();
+    bool? batteryExempt;
+    int gpsQueue = 0;
+    try {
+      batteryExempt = await ph.Permission.ignoreBatteryOptimizations.isGranted;
+    } catch (_) {}
+    try {
+      gpsQueue = await Store.I.pointCount();
+    } catch (_) {}
     await Api.I.call('POST', 'heartbeat', {
       'gps_on': gpsOn,
       'permission': perm.name,
       'background': perm == LocationPermission.always,
       'battery': _batteryLevel,
-      'app_version': '1.0.0',
+      if (batteryExempt != null) 'battery_exempt': batteryExempt,
+      'pending': Api.I.pending,
+      'gps_queue': gpsQueue,
+      'app_version': kAppVersion,
     });
     unawaited(Api.I.sync());
   }

@@ -261,6 +261,60 @@ final class Ui
             'idle' => '#f0a23a', 'on_break' => '#f0a23a', 'returning' => '#8b63f0', 'gps_offline' => '#ec5b6f', 'off_duty' => '#9aa5b8'][$s] ?? '#9aa5b8';
     }
 
+    /** Phone/app problems for a rider (see RiderHealth). */
+    public static function health(array $r): array
+    {
+        return RiderHealth::check($r, ($r['live_status'] ?? 'off_duty') !== 'off_duty', max(1, Settings::int('gps_offline_minutes')));
+    }
+
+    /** Small pill for lists: OK / N warnings / N problems, with the problems in the tooltip. */
+    public static function healthBadge(array $r): string
+    {
+        $is = self::health($r);
+        if (!$is) {
+            return '<span class="eva-pill ok"' . self::t('No problems found on the rider\'s phone.') . '><i class="fa-solid fa-circle-check"></i> OK</span>';
+        }
+        $bad = count(array_filter($is, static fn($x) => $x['level'] === 'bad'));
+        $tip = implode(' • ', array_column($is, 'title'));
+        return '<span class="eva-pill ' . ($bad ? 'bad' : 'warn') . '"' . self::t($tip) . '><i class="fa-solid fa-triangle-exclamation"></i> ' . count($is) . ' ' . (count($is) === 1 ? 'issue' : 'issues') . '</span>';
+    }
+
+    /** "App health" card for the rider page: problems with fixes, then the raw phone readings. */
+    public static function healthPanel(array $r): string
+    {
+        $e = [self::class, 'e'];
+        $ago = static function (?string $t): string {
+            if (!$t) {
+                return 'Never';
+            }
+            $s = max(0, time() - strtotime($t . ' UTC'));
+            return ($s < 60 ? $s . ' sec ago' : ($s < 3600 ? intdiv($s, 60) . ' min ago' : ($s < 86400 ? intdiv($s, 3600) . ' h ago' : Fmt::dt($t)))) . ' · ' . Fmt::dt($t);
+        };
+        $yn = static fn($v, $yes, $no) => $v === null ? '<span class="muted">Not reported yet</span>' : ((int)$v ? '<span class="eva-pill ok">' . $yes . '</span>' : '<span class="eva-pill bad">' . $no . '</span>');
+        $perm = $r['loc_permission'] ?? null;
+        $permTxt = $perm === null ? '<span class="muted">Not reported yet</span>' : ($perm === 'always' ? '<span class="eva-pill ok">Allow all the time</span>' : '<span class="eva-pill bad">' . $e(['whileInUse' => 'Only while using the app', 'denied' => 'Denied', 'deniedForever' => 'Denied (don\'t ask again)'][$perm] ?? $perm) . '</span>');
+        $acc = $r['last_accuracy'] ?? null;
+        $accTxt = $acc === null ? '—' : ((int)$acc . ' m ' . ((float)$acc <= 30 ? '<span class="eva-pill ok">Good</span>' : ((float)$acc <= 100 ? '<span class="eva-pill warn">Fair</span>' : '<span class="eva-pill bad">Poor</span>')));
+        $issues = self::health($r);
+        $list = '';
+        foreach ($issues as $x) {
+            $list .= '<div class="eva-alert ' . ($x['level'] === 'bad' ? 'bad' : 'warn') . '" style="font-weight:400"><b><i class="fa-solid fa-triangle-exclamation"></i> ' . $e($x['title']) . '</b><div class="small" style="margin-top:4px"><b>Fix:</b> ' . $e($x['fix']) . '</div></div>';
+        }
+        $list = $list ?: '<div class="eva-alert ok"><i class="fa-solid fa-circle-check"></i> No problems found. Location should arrive every few seconds while the rider is on duty.</div>';
+        $kv = '<dl class="kv">'
+            . '<dt' . self::t('When the phone last sent a GPS location to the server.') . '>Last GPS received</dt><dd>' . $e($ago($r['last_point_at'] ?? null)) . '</dd>'
+            . '<dt' . self::t('How precise the last GPS fix was. Under 30 m is good; indoors it is often 60-200 m.') . '>GPS accuracy</dt><dd>' . $accTxt . '</dd>'
+            . '<dt' . self::t('Android location permission for the app. It must be "Allow all the time" or tracking stops when the screen locks.') . '>Location permission</dt><dd>' . $permTxt . '</dd>'
+            . '<dt' . self::t('Whether Location (GPS) is switched on in the phone.') . '>GPS on phone</dt><dd>' . $yn($r['gps_on'] ?? null, 'On', 'Off') . '</dd>'
+            . '<dt' . self::t('Whether battery optimisation is turned off for the app. If not, Android may stop the app in the background.') . '>Battery saver</dt><dd>' . $yn($r['battery_exempt'] ?? null, 'Not restricted', 'Restricted') . '</dd>'
+            . '<dt' . self::t('Phone battery level from the last update.') . '>Battery</dt><dd>' . ($r['last_battery'] !== null ? (int)$r['last_battery'] . '%' : '—') . '</dd>'
+            . '<dt' . self::t('Version of the Hitech Delivery app on the rider\'s phone. Latest is ' . RiderHealth::LATEST_APP . '.') . '>App version</dt><dd>' . $e($r['app_version'] ?? '—') . '</dd>'
+            . '<dt' . self::t('Actions and GPS points saved on the phone that have not reached the server yet (no internet or weak signal).') . '>Waiting on phone</dt><dd>' . (int)($r['phone_pending'] ?? 0) . ' actions · ' . (int)($r['phone_gps_queue'] ?? 0) . ' GPS points</dd>'
+            . '<dt' . self::t('When the app last checked in with the server (every minute while on duty).') . '>App last checked in</dt><dd>' . $e($ago($r['last_heartbeat_at'] ?? null)) . '</dd>'
+            . '</dl>';
+        return '<div class="eva-card"><div class="eva-h"><h4><i class="fa-solid fa-heart-pulse"></i> App health' . self::tip('Checks the rider\'s phone for anything that stops live location: permission, GPS, battery saver, internet and app version. Updates every minute while the rider is on duty.') . '</h4>' . self::healthBadge($r) . '</div>' . $list . $kv . '</div>';
+    }
+
     public static function liveLabel(string $s): string
     {
         return ['travelling' => 'Delivering', 'at_customer' => 'At customer', 'available' => 'Available', 'at_warehouse' => 'At store',

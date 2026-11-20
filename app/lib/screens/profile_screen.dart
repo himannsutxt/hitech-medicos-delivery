@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../api.dart';
 import '../i18n.dart';
+import '../logic.dart';
 import '../state.dart';
 import '../store.dart';
 import '../ui.dart';
@@ -88,7 +89,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 )),
           ],
           const SizedBox(height: 24),
-          Center(child: Text('Hitech Medicos Delivery v1.0.0\n${Uri.tryParse(Api.I.base ?? '')?.host ?? ''}', textAlign: TextAlign.center, style: const TextStyle(color: C.muted, fontSize: 12))),
+          Center(child: Text('Hitech Medicos Delivery v$kAppVersion\n${Uri.tryParse(Api.I.base ?? '')?.host ?? ''}', textAlign: TextAlign.center, style: const TextStyle(color: C.muted, fontSize: 12))),
         ]),
       ),
     );

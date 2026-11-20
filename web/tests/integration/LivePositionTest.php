@@ -61,4 +61,57 @@ final class LivePositionTest extends TestCase
         Tracking::ingest($this->rider(), self::$duty, $this->pts(30, 3, 28.4530, $t0));
         $this->assertEqualsWithDelta(28.4536, (float)$this->rider()['last_lat'], 0.0001);
     }
+
+    public function testIndoorAccuracyStillMovesRider(): void
+    {
+        // Phones indoors often report 60-200 m. Live position must still update (KM stays strict).
+        $t = time() - 20; // newer than the previous test's last fix
+        Tracking::ingest($this->rider(), self::$duty, [['seq' => 40, 'lat' => 28.4545, 'lng' => 77.03, 'accuracy' => 140, 'device_at' => gmdate('c', $t)]]);
+        $r = $this->rider();
+        $this->assertEqualsWithDelta(28.4545, (float)$r['last_lat'], 0.0001);
+        $this->assertEqualsWithDelta(140.0, (float)$r['last_accuracy'], 0.01);
+        $this->assertNotNull($r['last_point_at']);
+    }
+
+    public function testMovementBetweenSyncBatchesIsAccepted(): void
+    {
+        // v1.1 bug: anchor used server time, so 400 m between two batches looked like a jump and was dropped.
+        $r0 = $this->rider();
+        $t = time() - 5;
+        Tracking::ingest($r0, self::$duty, [['seq' => 50, 'lat' => (float)$r0['last_lat'] + 0.0036, 'lng' => 77.03, 'accuracy' => 12, 'device_at' => gmdate('c', $t)]]);
+        $this->assertEqualsWithDelta((float)$r0['last_lat'] + 0.0036, (float)$this->rider()['last_lat'], 0.0001);
+    }
+
+    public function testHeartbeatStoresPhoneHealth(): void
+    {
+        $_SERVER['REMOTE_ADDR'] = '10.9.9.9';
+        Db::update('hm_rider', ['device_id' => 'dev-hb', 'pin_hash' => password_hash('6482', PASSWORD_DEFAULT)], 'rider_id=?', [self::$rid]);
+        $login = (new \HMD\RiderApi(['mobile' => '9876500001', 'pin' => '6482', 'device_id' => 'dev-hb'], []))->handle('POST', 'auth/login', null);
+        $res = (new \HMD\RiderApi(['device_id' => 'dev-hb', 'gps_on' => true, 'permission' => 'whileInUse', 'background' => false, 'battery' => 55,
+            'battery_exempt' => false, 'app_version' => '1.2.0', 'pending' => 4, 'gps_queue' => 120], []))->handle('POST', 'heartbeat', $login['access_token']);
+        $this->assertTrue($res['ok']);
+        $r = $this->rider();
+        $this->assertSame('whileInUse', $r['loc_permission']);
+        $this->assertSame(0, (int)$r['battery_exempt']);
+        $this->assertSame('1.2.0', $r['app_version']);
+        $this->assertSame(4, (int)$r['phone_pending']);
+        $this->assertSame(120, (int)$r['phone_gps_queue']);
+        $this->assertNotNull($r['last_heartbeat_at']);
+        // On duty with "while in use" only: tracking will stop when the screen locks -> exception for the manager
+        $this->assertSame(1, (int)Db::val("SELECT COUNT(*) FROM hm_exception WHERE rule_code='location_permission' AND rider_id=?", [self::$rid]));
+    }
+
+    public function testHeartbeatRejectsJunkValues(): void
+    {
+        $_SERVER['REMOTE_ADDR'] = '10.9.9.8';
+        Db::update('hm_rider', ['device_id' => 'dev-hb2', 'pin_hash' => password_hash('6482', PASSWORD_DEFAULT), 'app_version' => '1.2.0', 'loc_permission' => 'always'], 'rider_id=?', [self::$rid]);
+        $login = (new \HMD\RiderApi(['mobile' => '9876500001', 'pin' => '6482', 'device_id' => 'dev-hb2'], []))->handle('POST', 'auth/login', null);
+        (new \HMD\RiderApi(['device_id' => 'dev-hb2', 'permission' => '<script>x</script>', 'app_version' => "1.2.0'<b>", 'pending' => -50, 'gps_queue' => 999999999999, 'battery' => 400], []))->handle('POST', 'heartbeat', $login['access_token']);
+        $r = $this->rider();
+        $this->assertSame('always', $r['loc_permission'], 'unknown permission value is ignored');
+        $this->assertSame('1.2.0', $r['app_version'], 'malformed version is ignored');
+        $this->assertSame(0, (int)$r['phone_pending']);
+        $this->assertSame(10000000, (int)$r['phone_gps_queue']);
+        $this->assertSame(100, (int)$r['last_battery']);
+    }
 }

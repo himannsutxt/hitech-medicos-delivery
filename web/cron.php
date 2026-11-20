@@ -8,6 +8,7 @@ if (PHP_SAPI !== 'cli') {
 require __DIR__ . '/app/lib/autoload.php';
 date_default_timezone_set('UTC');
 \HMD\App::installErrorHandlers();
+\HMD\Migrate::run();
 foreach (\HMD\Jobs::runAll() as $job => $msg) {
     echo str_pad($job, 20) . $msg . PHP_EOL;
 }

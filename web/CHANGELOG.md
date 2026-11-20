@@ -2,6 +2,27 @@
 
 All notable changes. Dates in DD-MM-YYYY (IST).
 
+## [1.2.0] — 20-11-2026 — Live location fix + App health
+
+### Fixed
+- **Rider live location not updating.** Two causes, both fixed:
+  1. The "last known position" check compared each new GPS fix with the *server* time of the previous one, so any real movement between two sync batches looked like a 300+ km/h jump and was thrown away. It now uses the phone time of the last accepted fix.
+  2. Live position ignored fixes less accurate than 50 m, which is common indoors (60-200 m). Live Tracking now accepts up to 250 m (new setting **Settings → Maps → Live position: accept GPS up to**). KM still uses the strict 50 m limit.
+
+### Built
+- **App health panel** on every rider's page: last GPS received, GPS accuracy (good/fair/poor), location permission ("Allow all the time" or not), GPS on/off, battery saver restriction, battery, app version, actions and GPS points waiting on the phone, last check-in — with a plain-English fix for each problem found
+- **App health column + filter** on the Riders list ("Only with problems"); CSV export includes app version, permission, GPS and battery-saver status
+- **Warnings on Live Tracking**: a rider with a phone problem shows it under their name with a Fix link
+- New exception **"Location not allowed all the time"** (high) when a rider on duty has only "while using the app" permission
+- Rider app 1.2.0 reports battery-saver status, pending actions and queued GPS points; shows its version in Profile
+
+### Upgrade from 1.1.x
+Copy the new files over the old ones (keep `app/config.php` and `storage/`). **The database upgrades itself** on the first page load (adds 10 columns to the rider table; nothing is deleted). Then install the new APK on riders' phones — old apps keep working but show as "Old app version".
+
+### Pending
+- Release-signed APK: add GitHub secrets HMD_KEYSTORE_BASE64 and HMD_KEYSTORE_PASSWORD (current APK is debug-signed, for testing)
+- Everything under 1.0.0 "Pending"
+
 ## [1.1.1] — 20-11-2026
 
 ### Fixed

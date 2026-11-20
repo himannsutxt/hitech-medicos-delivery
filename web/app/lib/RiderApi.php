@@ -393,10 +393,26 @@ final class RiderApi
 
     private function heartbeat(): array
     {
-        $flags = array_intersect_key($this->body, array_flip(['gps_on', 'permission', 'background', 'battery_saver', 'battery', 'app_version']));
-        Db::update('hm_rider', ['last_seen_at' => Fmt::nowUtc(), 'last_battery' => is_numeric($flags['battery'] ?? null) ? (int)$flags['battery'] : $this->rider['last_battery']], 'rider_id=?', [$this->rider['rider_id']]);
-        if (isset($flags['gps_on']) && !$flags['gps_on'] && Tracking::activeDuty((int)$this->rider['rider_id'])) {
+        $b = $this->body;
+        $bool = static fn($v) => $v === null ? null : (int)filter_var($v, FILTER_VALIDATE_BOOLEAN);
+        $perm = (string)($b['permission'] ?? '');
+        $perm = in_array($perm, ['always', 'whileInUse', 'denied', 'deniedForever', 'unableToDetermine'], true) ? $perm : null;
+        $ver = isset($b['app_version']) && preg_match('/^\d+\.\d+\.\d+$/', (string)$b['app_version']) ? (string)$b['app_version'] : null;
+        $int = static fn($v, $max) => is_numeric($v) ? max(0, min($max, (int)$v)) : null;
+        $set = ['last_seen_at' => Fmt::nowUtc(), 'last_heartbeat_at' => Fmt::nowUtc()];
+        foreach (['gps_on' => $bool($b['gps_on'] ?? null), 'battery_exempt' => $bool($b['battery_exempt'] ?? null), 'loc_permission' => $perm, 'app_version' => $ver,
+            'last_battery' => $int($b['battery'] ?? null, 100), 'phone_pending' => $int($b['pending'] ?? null, 1000000), 'phone_gps_queue' => $int($b['gps_queue'] ?? null, 10000000)] as $k => $v) {
+            if ($v !== null) {
+                $set[$k] = $v;
+            }
+        }
+        Db::update('hm_rider', $set, 'rider_id=?', [$this->rider['rider_id']]);
+        $onDuty = (bool)Tracking::activeDuty((int)$this->rider['rider_id']);
+        if ($onDuty && isset($set['gps_on']) && $set['gps_on'] === 0) {
             Exceptions::raise('gps_offline', 'medium', (int)$this->rider['rider_id'], null, "{$this->rider['name']} turned GPS off while on duty.");
+        }
+        if ($onDuty && $perm !== null && $perm !== 'always') {
+            Exceptions::raise('location_permission', 'high', (int)$this->rider['rider_id'], null, "{$this->rider['name']}'s phone allows location only while the app is open ({$perm}). Tracking stops when the screen locks. Ask the rider to set Location to \"Allow all the time\".");
         }
         return ['ok' => true, 'server_time' => gmdate('c')];
     }

@@ -16,6 +16,7 @@ $defs = [
         'google_maps_key' => ['Google Maps API key', 'text', 'From Google Cloud Console (APIs & Services → Credentials). Turn on Maps JavaScript API, Geocoding API and Places API, and restrict the key to this website\'s address. Leave empty to use the free OpenStreetMap maps.'],
         'map_type' => ['Default map style', 'select', 'Map style shown first. Users can switch on the map.', ['roadmap' => 'Road map', 'hybrid' => 'Satellite with labels', 'terrain' => 'Terrain']],
         'live_trail_minutes' => ['Trail length on Live Tracking (minutes)', 'number', 'How much of the recent path is drawn when you follow a rider. Default 30.', [5, 240]],
+        'live_max_accuracy' => ['Live position: accept GPS up to (m)', 'number', 'Phones indoors often report 60-200 m. Fixes up to this accuracy move the rider on Live Tracking; KM still uses the stricter limit in GPS & tracking. Default 250.', [50, 1000]],
         'live_show_offline' => ['Show last known location of offline riders', 'bool', 'Riders who are off duty or have no GPS signal appear in grey at their last known spot, with the time.'],
     ],
     'tracking' => [

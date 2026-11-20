@@ -29,6 +29,7 @@ if (!App::installed()) {
     exit;
 }
 Auth::startSession();
+\HMD\Migrate::run();
 try {
     if (\HMD\Settings::get('google_maps_key') !== '') {
         $csp(true);
