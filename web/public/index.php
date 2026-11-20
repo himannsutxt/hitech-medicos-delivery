@@ -10,13 +10,13 @@ $nonce = base64_encode(random_bytes(16));
 define('HMD_NONCE', $nonce);
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
-header('Referrer-Policy: same-origin');
+header('Referrer-Policy: strict-origin-when-cross-origin');
 $csp = static function (bool $google) use ($nonce): void {
     $g = $google;
     header("Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-$nonce'" . ($g ? " 'unsafe-eval' https://maps.googleapis.com https://maps.gstatic.com" : '')
         . "; style-src 'self' 'unsafe-inline'" . ($g ? ' https://fonts.googleapis.com' : '')
         . "; font-src 'self'" . ($g ? ' https://fonts.gstatic.com' : '')
-        . "; img-src 'self' data: https://*.tile.openstreetmap.org" . ($g ? ' https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googleusercontent.com' : '')
+        . "; img-src 'self' data: https://tile.openstreetmap.org https://*.tile.openstreetmap.org" . ($g ? ' https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googleusercontent.com' : '')
         . "; connect-src 'self'" . ($g ? ' https://*.googleapis.com https://*.google.com https://*.gstatic.com data: blob:' : '')
         . ($g ? '; worker-src blob:; frame-src https://*.google.com' : '')
         . "; frame-ancestors 'self'; form-action 'self'; base-uri 'self'", true);

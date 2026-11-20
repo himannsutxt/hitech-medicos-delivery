@@ -54,7 +54,8 @@
   // ---------- Leaflet / OpenStreetMap adapter ----------
   function OsmMap(el, o) {
     var map = L.map(el).setView(o.center, o.zoom || 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+    // OSM tile policy requires a Referer header: send the site origin only.
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors', referrerPolicy: 'strict-origin-when-cross-origin', crossOrigin: false }).addTo(map);
     return {
       provider: 'osm', raw: map,
       marker: function (lat, lng, opt) {

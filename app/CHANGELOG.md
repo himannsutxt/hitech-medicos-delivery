@@ -2,6 +2,11 @@
 
 All notable changes. Dates in DD-MM-YYYY (IST).
 
+## [1.1.1] — 20-11-2026
+
+### Fixed
+- Maps showed "Access blocked" tiles from OpenStreetMap: the site now sends its address (origin only) with map tile requests, as OpenStreetMap's tile policy requires (Referrer-Policy: strict-origin-when-cross-origin)
+
 ## [1.1.0] — 20-11-2026 — Your feature list
 
 ### Built
