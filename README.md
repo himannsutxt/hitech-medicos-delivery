@@ -20,6 +20,12 @@ app/        Android app source (built into an APK by GitHub Actions)
 
 PHP 8.1+ with pdo_mysql, gd, fileinfo, curl, mbstring. Tested on PHP 8.3 + MariaDB 10.11.
 
+## Upgrading
+Copy the new `web/` files over the old ones, keeping `web/app/config.php` and `web/storage/`. Then open the site once and check Settings → System health.
+
+## Google Maps (optional, recommended)
+Google Cloud Console → create a project → enable **Maps JavaScript API**, **Geocoding API**, **Places API** → Credentials → Create API key → restrict it to **HTTP referrers** = your website address, and to those 3 APIs. Paste it in **Settings → Maps**. Without a key, OpenStreetMap is used.
+
 ## 2. Get the Android app (APK)
 1. Push this repository to GitHub (private).
 2. Add two repository secrets (Settings → Secrets and variables → Actions):

@@ -19,3 +19,4 @@ app/.flutter-plugins-dependencies
 app/.metadata
 app/pubspec.lock
 qa/
+web/.phpunit.result.cache

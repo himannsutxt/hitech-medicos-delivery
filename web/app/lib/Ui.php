@@ -7,21 +7,68 @@ final class Ui
 {
     public const NAV = [
         ['dashboard', 'Dashboard', 'fa-gauge-high', 'dashboard.view'],
+        ['live', 'Live Tracking', 'fa-location-crosshairs', 'dashboard.view'],
         ['orders', 'Orders', 'fa-box', 'orders.view'],
         ['scan', 'Warehouse Scan', 'fa-barcode', 'orders.scan'],
         ['riders', 'Riders', 'fa-motorcycle', 'riders.view'],
         ['cod', 'COD', 'fa-indian-rupee-sign', 'cod.view'],
         ['reports', 'Reports', 'fa-chart-column', 'reports.view'],
         ['exceptions', 'Exceptions', 'fa-triangle-exclamation', 'exceptions.view'],
-        ['settings', 'Settings', 'fa-gear', 'settings.edit'],
+        ['settings', 'Settings', 'fa-gear', 'settings.edit|audit.view'],
         ['users', 'Users', 'fa-user-shield', 'users.edit'],
-        ['audit', 'Audit & Health', 'fa-clipboard-list', 'audit.view'],
         ['help', 'Help', 'fa-circle-question', null],
     ];
+
+    public const NAV_TIPS = [
+        'dashboard' => 'Today at a glance: KPIs, riders and things needing attention',
+        'live' => 'Where every rider is right now, on a live map',
+        'orders' => 'All delivery orders: add, import, assign and track',
+        'scan' => 'Receive undelivered parcels back at the store',
+        'riders' => 'Delivery staff: add riders, set PINs, see routes',
+        'cod' => 'Cash collected by riders, deposits and shortages',
+        'reports' => 'Daily rider report, delivery times and failures',
+        'exceptions' => 'Automatic warnings that need someone to check',
+        'settings' => 'Store location, maps, GPS, proof, SMS, data, audit log and system health',
+        'users' => 'Office staff logins and what each role can do',
+        'help' => 'Setup guide and common questions',
+    ];
+
+    /** Tabs shared by Settings, Audit log and System health. */
+    public static function settingsTabs(string $active): string
+    {
+        $u = Auth::user();
+        $tabs = [];
+        if (Perm::has($u, 'settings.edit')) {
+            foreach (['general' => 'General', 'store' => 'Store location', 'maps' => 'Maps', 'tracking' => 'GPS & tracking', 'delivery' => 'Delivery & proof', 'cod' => 'COD', 'notify' => 'SMS / WhatsApp', 'data' => 'Data & backup'] as $k => $l) {
+                $tabs[$k] = [$l, '?r=settings&tab=' . $k];
+            }
+        }
+        if (Perm::has($u, 'audit.view')) {
+            $tabs['audit'] = ['Audit log', '?r=audit'];
+            $tabs['health'] = ['System health', '?r=audit&tab=health'];
+        }
+        $h = '<div class="eva-tabs">';
+        foreach ($tabs as $k => [$l, $href]) {
+            $h .= '<a class="' . ($active === $k ? 'active' : '') . '" href="' . $href . '">' . self::e($l) . '</a>';
+        }
+        return $h . '</div>';
+    }
 
     public static function e(mixed $s): string
     {
         return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    /** Small (i) icon with an explanation; shows on hover (desktop) and tap/focus (phone). */
+    public static function tip(string $text): string
+    {
+        return '<span class="tip" tabindex="0" role="note" aria-label="' . self::e($text) . '" data-tip="' . self::e($text) . '"><i class="fa-solid fa-circle-info"></i></span>';
+    }
+
+    /** title + aria-label attributes for buttons and links. */
+    public static function t(string $text): string
+    {
+        return ' title="' . self::e($text) . '" aria-label="' . self::e($text) . '"';
     }
 
     public static function url(array $params): string
@@ -60,11 +107,15 @@ final class Ui
         $open = (int)Db::val("SELECT COUNT(*) FROM hm_exception WHERE status='open'");
         $nav = '';
         foreach (self::NAV as [$key, $label, $icon, $perm]) {
-            if ($perm !== null && !Perm::has($u, $perm)) {
+            if ($perm !== null && !array_filter(explode('|', $perm), static fn($p) => Perm::has($u, $p))) {
                 continue;
             }
+            $href = $key;
+            if ($key === 'settings' && !Perm::has($u, 'settings.edit')) {
+                $href = 'audit'; // audit-only users land on the Audit log tab
+            }
             $badge = ($key === 'exceptions' && $open > 0) ? ' <span class="badge">' . $open . '</span>' : '';
-            $nav .= '<a href="?r=' . $key . '" class="' . ($active === $key ? 'active' : '') . '"><i class="fa-solid ' . $icon . '"></i> ' . self::e($label) . $badge . '</a>';
+            $nav .= '<a href="?r=' . $href . '" class="' . ($active === $key ? 'active' : '') . '"' . self::t(self::NAV_TIPS[$key] ?? $label) . '><i class="fa-solid ' . $icon . '"></i> ' . self::e($label) . $badge . '</a>';
         }
         $company = self::e(Settings::get('company_name'));
         echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -73,10 +124,10 @@ final class Ui
             . '<link rel="stylesheet" href="assets/eva.css?v=' . App::VERSION . '">' . $head . '</head><body>'
             . '<header class="hm-top"><a class="hm-brand" href="?r=dashboard"><span class="logo"><i class="fa-solid fa-truck-medical"></i></span><span>' . $company . ' Delivery<small>Rider tracking & dispatch</small></span></a>'
             . '<div class="hm-user"><i class="fa-regular fa-user"></i> <span class="name"><b>' . self::e($u['name'] ?? '') . '</b> · ' . self::e($u['role_name'] ?? '') . '</span>'
-            . '<form method="post" action="?r=logout" style="margin:0">' . self::csrfField() . '<button class="eva-btn sm"><i class="fa-solid fa-right-from-bracket"></i> Log out</button></form></div></header>'
+            . '<form method="post" action="?r=logout" style="margin:0">' . self::csrfField() . '<button class="eva-btn sm"' . self::t('End your session on this device') . '><i class="fa-solid fa-right-from-bracket"></i> Log out</button></form></div></header>'
             . '<div class="eva-wrap"><nav class="eva-nav">' . $nav . '<span class="ver">v' . App::VERSION . '</span></nav>'
-            . '<div class="page-title"><div><h1>' . self::e($title) . '</h1>' . ($sub !== '' ? '<div class="sub">' . self::e($sub) . '</div>' : '') . '</div><div>' . $actions . '</div></div>'
-            . self::flash() . $body . '</div><script src="assets/app.js?v=' . App::VERSION . '"></script></body></html>';
+            . '<div class="page-title"><div><h1>' . self::e($title) . '</h1>' . ($sub !== '' ? '<div class="sub">' . self::e($sub) . '</div>' : '') . '</div><div>' . Tips::apply($actions) . '</div></div>'
+            . self::flash() . Tips::apply($body) . '</div><script src="assets/app.js?v=' . App::VERSION . '"></script></body></html>';
     }
 
     /** Sortable header cell. $base = current filter params (without sort/order/page). */
@@ -162,10 +213,25 @@ final class Ui
         return $h;
     }
 
+    /** Map assets: Google Maps when a key is set, OpenStreetMap (Leaflet) otherwise and as fallback. */
+    public static function mapHead(): string
+    {
+        $cfg = ['key' => Settings::get('google_maps_key'), 'type' => Settings::get('map_type') ?: 'roadmap'];
+        return '<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">'
+            . '<script src="assets/vendor/leaflet/leaflet.js"></script>'
+            . '<script nonce="' . HMD_NONCE . '">window.HM_MAP=' . json_encode($cfg, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ';</script>'
+            . '<script src="assets/hmmap.js?v=' . App::VERSION . '"></script>';
+    }
+
     public static function leafletHead(): string
     {
-        return '<link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">'
-            . '<script src="assets/vendor/leaflet/leaflet.js"></script>';
+        return self::mapHead();
+    }
+
+    /** Small note shown under a map when Google Maps could not load. */
+    public static function mapNote(): string
+    {
+        return '<div class="hm-map-note muted small" hidden style="margin-top:6px"><i class="fa-solid fa-triangle-exclamation"></i> Google Maps could not load (check the API key in Settings → Maps). Showing OpenStreetMap instead.</div>';
     }
 
     public static function json(array $data, int $code = 200): never

@@ -10,6 +10,8 @@ final class Settings
         'company_name' => 'Hitech Medicos',
         'support_mobile' => '',
         'alert_email' => '',
+        // Maps (v1.1)
+        'google_maps_key' => '', 'map_type' => 'roadmap', 'live_trail_minutes' => '30', 'live_show_offline' => '1',
         // Tracking
         'gps_interval_moving' => '15', 'gps_interval_slow' => '30', 'gps_interval_stationary' => '180',
         'gps_min_accuracy' => '50', 'gps_max_speed' => '120',

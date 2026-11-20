@@ -11,6 +11,7 @@ final class Tracking
         $stored = 0;
         $rejected = 0;
         $latest = null;
+        $cands = [];
         $mock = false;
         foreach (array_slice($points, 0, 500) as $p) {
             if (!is_array($p) || !isset($p['seq'], $p['lat'], $p['lng']) || !Validate::latLng($p['lat'], $p['lng']) || !is_numeric($p['seq'])) {
@@ -33,9 +34,27 @@ final class Tracking
             if (!empty($p['is_mock'])) {
                 $mock = true;
             }
-            if ($latest === null || $deviceAt >= $latest['device_at']) {
-                $latest = ['lat' => (float)$p['lat'], 'lng' => (float)$p['lng'], 'speed' => $p['speed'] ?? null, 'battery' => $p['battery'] ?? null, 'device_at' => $deviceAt];
+            if (empty($p['is_mock'])) {
+                $cands[] = ['seq' => (int)$p['seq'], 'lat' => (float)$p['lat'], 'lng' => (float)$p['lng'],
+                    'accuracy' => isset($p['accuracy']) && is_numeric($p['accuracy']) ? (float)$p['accuracy'] : 0.0,
+                    'ts' => strtotime($deviceAt . ' UTC'), 'speed' => $p['speed'] ?? null, 'battery' => $p['battery'] ?? null, 'device_at' => $deviceAt];
             }
+        }
+        // Live position = newest fix that survives the same filter used for KM (accuracy, glitch jumps),
+        // starting from the rider's last known position so a glitch can't move them across the city.
+        if ($cands) {
+            $anchor = [];
+            if ($rider['last_lat'] !== null && $rider['last_seen_at'] !== null) {
+                $anchor[] = ['seq' => PHP_INT_MIN, 'lat' => (float)$rider['last_lat'], 'lng' => (float)$rider['last_lng'], 'accuracy' => 0.0, 'ts' => min(strtotime($rider['last_seen_at'] . ' UTC'), min(array_column($cands, 'ts')) - 1), 'anchor' => true];
+            }
+            $kept = Geo::filterPoints(array_merge($anchor, $cands), (float)Settings::get('gps_min_accuracy'), (float)Settings::get('gps_max_speed'));
+            $last = end($kept);
+            if ($last && empty($last['anchor'])) {
+                $latest = $last;
+            }
+        }
+        if (!$latest) {
+            Db::update('hm_rider', ['last_seen_at' => Fmt::nowUtc()], 'rider_id=?', [$rider['rider_id']]);
         }
         if ($latest) {
             Db::update('hm_rider', [

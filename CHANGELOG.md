@@ -2,6 +2,25 @@
 
 All notable changes. Dates in DD-MM-YYYY (IST).
 
+## [1.1.0] — 20-11-2026 — Your feature list
+
+### Built
+- **Live Tracking page** (new top-menu item): full-screen map + rider list with place name, status, current order, speed, battery and last update; search, status filter and sort; click a rider to follow them with their recent path (trail length set in Settings → Maps); grey dots for the last known spot of offline / off-duty riders; refreshes every 10 s; works on phones
+- **Google Maps on every map** (dashboard, Live Tracking, rider route, order page, order pin, store location) once a key is added in **Settings → Maps**; Google address search when adding an order and when setting the store; place names on Live Tracking. Without a key, or if Google fails to load, the free OpenStreetMap maps are used automatically
+- **Audit log and System health moved into Settings** as tabs; removed from the top menu
+- **Add Rider is now Name, Mobile, PIN only**; employee code (DEL001…) is created automatically; vehicle, licence, emergency number and limits are under "More details" on Edit
+- **Tooltips everywhere**: every filter, column, KPI tile, setting and button has an (i) explanation (hover on desktop, tap on phones)
+
+### Fixed
+- A rider's live position could jump to a GPS glitch point; it now uses the same accuracy and jump filter as the KM calculation
+- "Stop following" and other hidden buttons showed on phones; checkbox size in filter bars
+
+### Upgrade from 1.0.0
+Copy the new files over the old ones, but keep `app/config.php` and the `storage/` folder. No database changes.
+
+### Pending
+Everything listed under 1.0.0 "Pending", plus anything you add to docs/BACKLOG-v1.1.md for the next build.
+
 ## [1.0.0] — 14-11-2026 — Phase 1 (core)
 
 ### Built — Website (PHP 8.1+ / MySQL, Eva UI)

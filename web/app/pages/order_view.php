@@ -91,13 +91,12 @@ if (Perm::has($u, 'orders.edit') && in_array($d['status'], ['ready', 'assigned']
 if (Perm::has($u, 'orders.cancel') && StateMachine::can($d['status'], 'cancelled')) {
     $actions .= '<form method="post" action="?r=order_bulk" style="display:inline">' . Ui::csrfField() . '<input type="hidden" name="ids" value="' . $id . '"><input type="hidden" name="back" value="?r=orders"><button class="eva-btn danger" name="action" value="cancel" data-confirm="Do you really want to cancel order ' . $e($d['order_no']) . '?" data-confirm2="The order will be marked Cancelled. The record and its history are kept. Proceed?"><i class="fa-solid fa-ban"></i> Cancel order</button></form>';
 }
-$mapCard = $pts || $d['cust_lat'] !== null ? '<div class="eva-card"><div class="eva-h"><h4><i class="fa-solid fa-map"></i> Where events happened</h4><span class="muted small">Red pin = customer address</span></div><div id="omap" class="map sm"></div></div>' : '';
+$mapCard = $pts || $d['cust_lat'] !== null ? '<div class="eva-card"><div class="eva-h"><h4><i class="fa-solid fa-map"></i> Where events happened</h4><span class="muted small">Red pin = customer address</span></div><div id="omap" class="map sm"></div>' . Ui::mapNote() . '</div>' : '';
 $body = '<div class="grid2"><div><div class="eva-card"><div class="eva-h"><h4><i class="fa-solid fa-clock-rotate-left"></i> Timeline</h4></div><ul class="timeline">' . ($items ?: '<li>No events.</li>') . '</ul></div>'
     . '<div class="eva-card"><div class="eva-h"><h4><i class="fa-solid fa-person-walking-arrow-right"></i> Delivery attempts</h4></div><div class="eva-table-wrap"><table class="eva-table stack"><thead><tr><th>#</th><th>Rider</th><th>Result</th><th class="num">Travel</th><th class="num">At customer</th><th class="num">Total</th><th>Distance from address</th><th>Proof</th></tr></thead><tbody>' . $arows . '</tbody></table></div></div></div>'
     . '<div><div class="eva-card"><div class="eva-h"><h4><i class="fa-solid fa-circle-info"></i> Details</h4></div>' . $kv . '</div>' . $mapCard . '</div></div>';
-$js = $mapCard ? '<script nonce="' . HMD_NONCE . '">(function(){var pts=' . json_encode($pts) . ',c=' . json_encode($d['cust_lat'] !== null ? [(float)$d['cust_lat'], (float)$d['cust_lng']] : null) . ';
-var m=L.map("omap");L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap"}).addTo(m);var b=[];
-if(c){L.circleMarker(c,{radius:10,color:"#ec5b6f",fillOpacity:.6}).addTo(m).bindTooltip("Customer address");b.push(c);}
-pts.forEach(function(p){L.circleMarker([p.lat,p.lng],{radius:6,color:"#6b5cf0",fillOpacity:.8}).addTo(m).bindTooltip(p.label);b.push([p.lat,p.lng]);});
-if(b.length>1)m.fitBounds(b,{padding:[30,30],maxZoom:17});else m.setView(b[0],16);})();</script>' : '';
-Ui::page('Order ' . $d['order_no'], 'orders', $body . $js, '', $actions . ' <a class="eva-btn" href="?r=orders">Back to orders</a>', $mapCard ? Ui::leafletHead() : '');
+$js = $mapCard ? '<script nonce="' . HMD_NONCE . '">HMMap.ready(function(){var pts=' . json_encode($pts) . ',c=' . json_encode($d['cust_lat'] !== null ? [(float)$d['cust_lat'], (float)$d['cust_lng']] : null) . ';
+var start=c||(pts.length?[pts[0].lat,pts[0].lng]:[28.4595,77.0266]),m=HMMap.create("omap",{center:start,zoom:15}),b=[];
+if(c){m.marker(c[0],c[1],{color:"#ec5b6f",size:11,title:"Customer address"});b.push(c);}
+pts.forEach(function(p){m.marker(p.lat,p.lng,{color:"#6b5cf0",size:6,title:p.label});b.push([p.lat,p.lng]);});m.fit(b,17);});</script>' : '';
+Ui::page('Order ' . $d['order_no'], 'orders', $body . $js, '', $actions . ' <a class="eva-btn" href="?r=orders">Back to orders</a>', $mapCard ? Ui::mapHead() : '');

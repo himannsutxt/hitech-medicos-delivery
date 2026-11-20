@@ -2,7 +2,7 @@
 declare(strict_types=1);
 use HMD\{Db, Fmt, Settings, Ui, Audit, Notify, Validate};
 
-$tabs = ['general' => 'General', 'store' => 'Store location', 'tracking' => 'GPS & tracking', 'delivery' => 'Delivery & proof', 'cod' => 'COD', 'notify' => 'SMS / WhatsApp', 'data' => 'Data & backup'];
+$tabs = ['general' => 'General', 'store' => 'Store location', 'maps' => 'Maps', 'tracking' => 'GPS & tracking', 'delivery' => 'Delivery & proof', 'cod' => 'COD', 'notify' => 'SMS / WhatsApp', 'data' => 'Data & backup'];
 $tab = isset($tabs[$_GET['tab'] ?? '']) ? $_GET['tab'] : 'general';
 $e = [Ui::class, 'e'];
 // field definitions: key => [label, type, help, extra]
@@ -11,6 +11,12 @@ $defs = [
         'company_name' => ['Company name', 'text', 'Shown in the app, website and customer SMS.'],
         'support_mobile' => ['Support mobile', 'text', 'Riders see this number in the app for help.'],
         'alert_email' => ['Alert email', 'email', 'Critical exceptions and failed jobs are emailed here.'],
+    ],
+    'maps' => [
+        'google_maps_key' => ['Google Maps API key', 'text', 'From Google Cloud Console (APIs & Services → Credentials). Turn on Maps JavaScript API, Geocoding API and Places API, and restrict the key to this website\'s address. Leave empty to use the free OpenStreetMap maps.'],
+        'map_type' => ['Default map style', 'select', 'Map style shown first. Users can switch on the map.', ['roadmap' => 'Road map', 'hybrid' => 'Satellite with labels', 'terrain' => 'Terrain']],
+        'live_trail_minutes' => ['Trail length on Live Tracking (minutes)', 'number', 'How much of the recent path is drawn when you follow a rider. Default 30.', [5, 240]],
+        'live_show_offline' => ['Show last known location of offline riders', 'bool', 'Riders who are off duty or have no GPS signal appear in grey at their last known spot, with the time.'],
     ],
     'tracking' => [
         'gps_interval_moving' => ['GPS interval when moving (sec)', 'number', 'How often the app records location while riding. Default 15.', [5, 120]],
@@ -73,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             if ($val !== $old) {
                 Settings::set($k, $val);
-                $changed[$k] = [str_contains($k, 'url_template') ? '(hidden)' : $old, str_contains($k, 'url_template') ? '(hidden)' : $val];
+                $changed[$k] = [(str_contains($k, 'url_template') || $k === 'google_maps_key') ? '(hidden)' : $old, (str_contains($k, 'url_template') || $k === 'google_maps_key') ? '(hidden)' : $val];
             }
         }
         if ($changed) {
@@ -83,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($act === 'test_sms') {
         $m = Validate::mobile($_POST['test_mobile'] ?? '');
         $ok = $m && Notify::customer($m, Settings::get('company_name') . ': test message from the delivery system.');
-        Ui::flash($ok ? 'ok' : 'bad', $ok ? 'Test message sent. Check the phone.' : 'Could not send. Check the URL, that sending is switched on, and the error log under Audit & Health.');
+        Ui::flash($ok ? 'ok' : 'bad', $ok ? 'Test message sent. Check the phone.' : 'Could not send. Check the URL, that sending is switched on, and the error log under Settings → System health.');
     } elseif ($act === 'store') {
         $id = (int)($_POST['warehouse_id'] ?? 0);
         $row = ['name' => Validate::text($_POST['name'] ?? '', 100) ?: 'Main Store', 'address' => Validate::text($_POST['address'] ?? '', 255),
@@ -132,11 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     Ui::redirect('?r=settings&tab=' . $tab);
 }
 
-$nav = '<div class="eva-tabs">';
-foreach ($tabs as $k => $l) {
-    $nav .= '<a class="' . ($tab === $k ? 'active' : '') . '" href="?r=settings&tab=' . $k . '">' . $l . '</a>';
-}
-$nav .= '</div>';
+$nav = Ui::settingsTabs($tab);
 $body = '';
 $head = '';
 if ($tab === 'store') {
@@ -157,11 +159,13 @@ if ($tab === 'store') {
         . '<div class="eva-field"><label>Address</label><div><input type="text" name="address" value="' . $e($w['address'] ?? '') . '"></div></div>'
         . '<div class="eva-field"><label>Radius (m)</label><div><input type="number" name="radius_m" min="50" max="2000" value="' . (int)($w['radius_m'] ?? 200) . '"><div class="help">Riders starting duty outside this circle are flagged. Default 200.</div></div></div>'
         . '<div class="eva-field"><label class="req">Location</label><div><input type="text" id="lat" name="lat" placeholder="Latitude" value="' . $e($w['lat'] ?? '') . '"><input type="text" id="lng" name="lng" placeholder="Longitude" style="margin-top:6px" value="' . $e($w['lng'] ?? '') . '"><div class="help">Click the store on the map, or paste the coordinates from Google Maps.</div></div></div>'
-        . '<button class="eva-btn primary" style="margin-top:12px"><i class="fa-solid fa-check"></i> Save store</button></div><div id="smap" class="map"></div></form></div>';
-    $body .= '<script nonce="' . HMD_NONCE . '">(function(){var m=L.map("smap").setView(' . json_encode($c) . ',' . (isset($w['lat']) && $w['lat'] !== null ? 17 : 12) . ');L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap"}).addTo(m);
-var la=document.getElementById("lat"),ln=document.getElementById("lng"),r=document.querySelector("[name=radius_m]"),mk=null,ci=null;function put(a,b){if(mk){m.removeLayer(mk);m.removeLayer(ci);}mk=L.marker([a,b]).addTo(m);ci=L.circle([a,b],{radius:+r.value||200,color:"#20b2c4"}).addTo(m);la.value=a.toFixed(7);ln.value=b.toFixed(7);}
-if(la.value&&ln.value)put(+la.value,+ln.value);m.on("click",function(e){put(e.latlng.lat,e.latlng.lng);});r.addEventListener("change",function(){if(la.value)put(+la.value,+ln.value);});})();</script>';
-    $head = Ui::leafletHead();
+        . '<button class="eva-btn primary" style="margin-top:12px"><i class="fa-solid fa-check"></i> Save store</button></div><div><div hidden style="margin-bottom:8px"><input class="inp" id="store-search" placeholder="Search your store on Google Maps" style="max-width:none"' . Ui::t('Type the shop name or address and pick it to place the pin') . '></div><div id="smap" class="map"></div>' . Ui::mapNote() . '</div></form></div>';
+    $body .= '<script nonce="' . HMD_NONCE . '">HMMap.ready(function(){var m=HMMap.create("smap",{center:' . json_encode($c) . ',zoom:' . (isset($w['lat']) && $w['lat'] !== null ? 17 : 12) . '});
+var la=document.getElementById("lat"),ln=document.getElementById("lng"),r=document.querySelector("[name=radius_m]"),mk=null,ci=null;
+function put(a,b,zoom){if(mk){mk.remove();ci.remove();}mk=m.marker(a,b,{color:"#20b2c4",size:10,title:"Store"});ci=m.circle(a,b,+r.value||200,{color:"#20b2c4"});la.value=a.toFixed(7);ln.value=b.toFixed(7);if(zoom)m.view(a,b,17);}
+if(la.value&&ln.value)put(+la.value,+ln.value);m.onClick(function(a,b){put(a,b);});r.addEventListener("change",function(){if(la.value)put(+la.value,+ln.value);});
+var s=document.getElementById("store-search");if(HMMap.autocomplete(s,function(p){put(p.lat,p.lng,true);var ad=document.querySelector("[name=address]");if(!ad.value)ad.value=p.address;})){s.parentNode.hidden=false;}});</script>';
+    $head = Ui::mapHead();
 } else {
     $fields = '';
     foreach ($defs[$tab] as $k => $d) {
@@ -173,9 +177,10 @@ if(la.value&&ln.value)put(+la.value,+ln.value);m.on("click",function(e){put(e.la
             'email' => '<input type="email" name="' . $k . '" value="' . $e($val) . '">',
             default => '<input type="text" name="' . $k . '" value="' . $e($val) . '" autocomplete="off">',
         };
-        $fields .= '<div class="eva-field"><label>' . $e($d[0]) . '</label><div>' . $input . ($d[2] ? '<div class="help">' . $e($d[2]) . '</div>' : '') . '</div></div>';
+        $long = str_contains($k, 'url_template') || $k === 'google_maps_key';
+        $fields .= '<div class="eva-field"><label>' . $e($d[0]) . ($d[2] ? Ui::tip($d[2]) : '') . '</label><div>' . $input . ($long && $d[2] ? '<div class="help">' . $e($d[2]) . '</div>' : '') . '</div></div>';
     }
-    $body = '<div class="eva-card">' . $nav . '<form method="post">' . Ui::csrfField() . '<input type="hidden" name="act" value="save">' . $fields . '<div style="margin-top:14px"><button class="eva-btn primary"><i class="fa-solid fa-check"></i> Save</button></div></form>';
+    $body = '<div class="eva-card">' . $nav . '<form method="post">' . Ui::csrfField() . '<input type="hidden" name="act" value="save">' . $fields . '<div style="margin-top:14px"><button class="eva-btn primary"' . Ui::t('Save the settings on this tab') . '><i class="fa-solid fa-check"></i> Save</button></div></form>';
     if ($tab === 'notify') {
         $body .= '<form method="post" style="margin-top:18px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">' . Ui::csrfField() . '<input type="hidden" name="act" value="test_sms"><b>Test:</b><input class="inp" style="width:180px" name="test_mobile" placeholder="Your mobile number"><button class="eva-btn"><i class="fa-solid fa-paper-plane"></i> Send test message</button></form>';
     }
@@ -186,4 +191,4 @@ if(la.value&&ln.value)put(+la.value,+ln.value);m.on("click",function(e){put(e.la
     }
     $body .= '</div>';
 }
-Ui::page('Settings', 'settings', $body, 'Every change is recorded in the audit log.', '', $head);
+Ui::page('Settings', 'settings', $body, 'Every change is recorded in the audit log. Hover or tap the (i) icons for help.', '', $head);

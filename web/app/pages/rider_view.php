@@ -68,12 +68,12 @@ if (Perm::has($u, 'riders.edit')) {
     }
 }
 $body .= '<div class="grid2"><div class="eva-card"><div class="eva-h"><h4><i class="fa-solid fa-route"></i> Route on ' . date('d-m-Y', strtotime($day)) . '</h4><span class="muted small">' . count($route) . ' GPS points · green = delivered, red = not delivered</span></div>'
-    . (Perm::has($u, 'gps.history') ? '<div id="rmap" class="map"></div>' : '<div class="eva-empty">You do not have permission to view route history.</div>') . '</div>'
+    . (Perm::has($u, 'gps.history') ? '<div id="rmap" class="map"></div>' . Ui::mapNote() : '<div class="eva-empty">You do not have permission to view route history.</div>') . '</div>'
     . '<div><div class="eva-card"><div class="eva-h"><h4><i class="fa-solid fa-id-badge"></i> Profile</h4>' . (Perm::has($u, 'riders.edit') && !$r['deleted_at'] ? '<a class="more" href="?r=rider_edit&id=' . $id . '">Edit</a>' : '') . '</div>' . $info . '<div style="margin-top:12px">' . $act . '</div></div>'
     . '<div class="eva-card"><div class="eva-h"><h4><i class="fa-solid fa-list-ol"></i> Stops</h4></div><div class="eva-table-wrap"><table class="eva-table stack"><thead><tr><th>Time</th><th>Order</th><th>Result</th></tr></thead><tbody>' . $stopRows . '</tbody></table></div></div></div></div>';
-$js = Perm::has($u, 'gps.history') ? '<script nonce="' . HMD_NONCE . '">(function(){var route=' . json_encode($route) . ',stops=' . json_encode($stopPts) . ';var m=L.map("rmap").setView([28.4595,77.0266],12);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap"}).addTo(m);var b=[];
-if(route.length){var pl=L.polyline(route,{color:"#6b5cf0",weight:4,opacity:.8}).addTo(m);b=b.concat(route);L.circleMarker(route[0],{radius:7,color:"#20b2c4",fillOpacity:1}).addTo(m).bindTooltip("Start");}
-stops.forEach(function(s){L.circleMarker([s.lat,s.lng],{radius:8,color:"#fff",weight:2,fillColor:s.ok?"#1fb57a":"#ec5b6f",fillOpacity:1}).addTo(m).bindTooltip(s.label);b.push([s.lat,s.lng]);});
-if(b.length>1)m.fitBounds(b,{padding:[30,30]});})();</script>' : '';
-Ui::page($r['name'], 'riders', $body . $js, $r['employee_code'] . ' · ' . Ui::liveLabel($r['live_status']), '<a class="eva-btn" href="?r=riders">Back to riders</a>', Ui::leafletHead());
+$js = Perm::has($u, 'gps.history') ? '<script nonce="' . HMD_NONCE . '">HMMap.ready(function(){var route=' . json_encode($route) . ',stops=' . json_encode($stopPts) . ';
+var m=HMMap.create("rmap",{center:route.length?route[0]:(stops.length?[stops[0].lat,stops[0].lng]:[28.4595,77.0266]),zoom:12}),b=[];
+if(route.length){m.line(route,{color:"#6b5cf0",weight:4});b=b.concat(route);m.marker(route[0][0],route[0][1],{color:"#20b2c4",size:7,title:"Start"});}
+stops.forEach(function(s){m.marker(s.lat,s.lng,{color:s.ok?"#1fb57a":"#ec5b6f",size:8,title:s.label});b.push([s.lat,s.lng]);});
+m.fit(b,16);});</script>' : '';
+Ui::page($r['name'], 'riders', $body . $js, $r['employee_code'] . ' · ' . Ui::liveLabel($r['live_status']), '<a class="eva-btn" href="?r=riders">Back to riders</a>', Ui::mapHead());

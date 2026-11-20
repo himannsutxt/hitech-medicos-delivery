@@ -9,6 +9,8 @@ use HMD\Validate;
 use HMD\CsvImport;
 use HMD\Ledger;
 use HMD\ListQuery;
+use HMD\Riders;
+use HMD\Tips;
 
 require_once __DIR__ . '/../../app/lib/autoload.php';
 
@@ -196,5 +198,28 @@ final class CoreLogicTest extends TestCase
         $this->assertSame('d.order_no', $q2->sort);
         $this->assertSame('ASC', $q2->order);
         $this->assertSame(100, $q2->offset());
+    }
+
+    // ---------- Rider codes (v1.1) ----------
+    public function testNextEmployeeCode(): void
+    {
+        $this->assertSame('DEL001', Riders::nextCode([]));
+        $this->assertSame('DEL010', Riders::nextCode(['DEL001', 'DEL009', 'X12', 'del003']));
+        $this->assertSame('DEL1000', Riders::nextCode(['DEL999']));
+        $this->assertSame('DEL004', Riders::nextCode(['DEL003', 'DEL-OLD', 'DELIVERY']));
+    }
+
+    // ---------- Tooltips (v1.1) ----------
+    public function testTipsAddedToLabelsColumnsKpisAndButtons(): void
+    {
+        $html = '<label>Status</label><th>Rider</th><th class="num"><a class="sort asc" href="?x=1">Attempts</a></th>'
+            . '<div class="l">Riders on duty</div><button class="eva-btn primary"><i class="fa"></i> Filter</button>'
+            . '<a class="eva-btn" href="?r=x" title="Mine">Export CSV</a><th>Unknown col</th><label>Nope label</label>';
+        $out = Tips::apply($html);
+        $this->assertSame(4, substr_count($out, 'class="tip"'));                      // label, 2 columns, KPI
+        $this->assertStringContainsString('title="Apply the filters above"', $out);   // button got its tooltip
+        $this->assertStringContainsString('title="Mine"', $out);                      // existing title kept
+        $this->assertSame(1, substr_count($out, 'title='.chr(34).'Mine'));
+        $this->assertStringContainsString('<th>Unknown col</th>', $out);              // unknown text untouched
     }
 }

@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['act'] ?? '') === 'run_job'
     Ui::flash(str_starts_with($msg, 'FAILED') ? 'bad' : 'ok', $_POST['job'] . ': ' . $msg);
     Ui::redirect('?r=audit&tab=health');
 }
-$nav = '<div class="eva-tabs"><a class="' . ($tab === 'log' ? 'active' : '') . '" href="?r=audit">Audit log</a><a class="' . ($tab === 'health' ? 'active' : '') . '" href="?r=audit&tab=health">System health</a></div>';
+$nav = Ui::settingsTabs($tab === 'health' ? 'health' : 'audit');
 if ($tab === 'log') {
     $f = ['q' => Validate::text((string)($_GET['q'] ?? ''), 60), 'actor' => in_array($_GET['actor'] ?? '', ['admin', 'rider', 'system'], true) ? $_GET['actor'] : '', 'from' => Ui::dateParam('from'), 'to' => Ui::dateParam('to')];
     $where = ['1=1'];
@@ -56,7 +56,7 @@ if ($tab === 'log') {
     $th = static fn($l, $c) => Ui::th($l, $c, $q, $base);
     $body = '<div class="eva-card">' . $nav . Ui::presets('audit', $base) . '<form class="eva-filters" method="get"><input type="hidden" name="r" value="audit"><div><label>Search</label><input name="q" value="' . $e($f['q']) . '" placeholder="Action, person, record ID"></div><div><label>Who</label><select name="actor">' . Ui::options(['admin' => 'Staff', 'rider' => 'Riders', 'system' => 'System'], $f['actor'], 'Everyone') . '</select></div><div><label>From</label><input type="date" name="from" value="' . $e($f['from']) . '"></div><div><label>To</label><input type="date" name="to" value="' . $e($f['to']) . '"></div><button class="eva-btn primary"><i class="fa-solid fa-filter"></i> Filter</button><a class="eva-btn" href="?r=audit">Reset</a><span class="count">' . $total . ' entries</span></form>'
         . '<div class="eva-table-wrap"><table class="eva-table stack"><thead><tr>' . $th('When', 'a.created_at') . $th('Who', 'a.actor_name') . $th('Action', 'a.action') . '<th>Record</th><th>Change</th><th>IP</th></tr></thead><tbody>' . $tr . '</tbody></table></div>' . Ui::pager($total, $q, $base) . '</div>';
-    Ui::page('Audit log', 'audit', $body, 'Who changed what and when. Entries cannot be edited or deleted.', '<a class="eva-btn" href="' . $e(Ui::url($base + ['export' => 'csv'])) . '"><i class="fa-solid fa-download"></i> Export CSV</a>');
+    Ui::page('Settings · Audit log', 'settings', $body, 'Who changed what and when. Entries cannot be edited or deleted.', '<a class="eva-btn" href="' . $e(Ui::url($base + ['export' => 'csv'])) . '"><i class="fa-solid fa-download"></i> Export CSV</a>');
     return;
 }
 $checks = ['PHP version' => [PHP_VERSION, version_compare(PHP_VERSION, '8.1', '>=')], 'MySQL / MariaDB' => [(string)Db::val('SELECT VERSION()'), true],
@@ -82,4 +82,4 @@ $tail = is_file($logf) ? implode('', array_slice(file($logf) ?: [], -40)) : '';
 $body = '<div class="eva-card">' . $nav . '<div class="eva-h"><h4><i class="fa-solid fa-heart-pulse"></i> Server</h4></div><div class="eva-table-wrap"><table class="eva-table stack"><tbody>' . $ch . '</tbody></table></div></div>'
     . '<div class="eva-card"><div class="eva-h"><h4><i class="fa-solid fa-clock"></i> Scheduled jobs</h4><span class="muted small">Cron command: <code>php ' . $e(App::root()) . '/cron.php</code> every 5 minutes</span></div><div class="eva-table-wrap"><table class="eva-table stack"><thead><tr><th>Job</th><th>Last run</th><th>Next run</th><th>Result</th><th class="num">Failures</th><th></th></tr></thead><tbody>' . $jr . '</tbody></table></div></div>'
     . '<div class="eva-card"><div class="eva-h"><h4><i class="fa-solid fa-bug"></i> Recent errors (last 40 lines)</h4></div>' . ($tail !== '' ? '<pre style="white-space:pre-wrap;font-size:12px;background:#f7f9fd;padding:10px;border-radius:8px;max-height:360px;overflow:auto">' . $e($tail) . '</pre>' : '<div class="eva-empty">No errors logged.</div>') . '</div>';
-Ui::page('System health', 'audit', $body, 'Diagnostics for the server, cron jobs and errors.');
+Ui::page('Settings · System health', 'settings', $body, 'Diagnostics for the server, cron jobs and errors.');

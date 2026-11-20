@@ -48,20 +48,18 @@ $ex = $ex ?: '<div class="eva-empty"><i class="fa-regular fa-face-smile"></i> No
 $wh = Db::one('SELECT lat, lng, name FROM hm_warehouse WHERE status=1 ORDER BY warehouse_id LIMIT 1');
 $center = ($wh && $wh['lat'] !== null) ? [(float)$wh['lat'], (float)$wh['lng']] : [28.4595, 77.0266];
 
-$body .= '<div class="grid2"><div class="eva-card"><div class="eva-h"><h4><i class="fa-solid fa-map-location-dot"></i> Live map</h4><span class="muted small">Refreshes every 15 seconds · <span id="upd"></span></span></div><div id="map" class="map"></div></div>'
+$body .= '<div class="grid2"><div class="eva-card"><div class="eva-h"><h4><i class="fa-solid fa-map-location-dot"></i> Live map</h4><span class="muted small">Refreshes every 15 seconds · <span id="upd"></span> · <a href="?r=live"' . Ui::t('Full-screen map with every rider, place names and follow mode') . '>Open Live Tracking →</a></span></div><div id="map" class="map"></div>' . Ui::mapNote() . '</div>'
     . '<div class="eva-card"><div class="eva-h"><h4><i class="fa-solid fa-triangle-exclamation"></i> Needs attention</h4><a class="more" href="?r=exceptions">All exceptions</a></div>' . $ex . '</div></div>'
     . '<div class="eva-card"><div class="eva-h"><h4><i class="fa-solid fa-motorcycle"></i> Riders today</h4><a class="more" href="?r=orders&status=ready">Assign ready orders →</a></div>'
     . '<div class="eva-table-wrap"><table class="eva-table stack"><thead><tr><th>Rider</th><th>Status</th><th>Current order</th><th class="num">Done / pending</th><th class="num">KM today</th><th class="num">Battery</th><th>Last GPS</th></tr></thead><tbody>' . $rows . '</tbody></table></div></div>';
 
-$js = '<script nonce="' . HMD_NONCE . '">
-(function(){var map=L.map("map").setView([' . $center[0] . ',' . $center[1] . '],12);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap"}).addTo(map);
-' . ($wh && $wh['lat'] !== null ? 'L.circle([' . $center[0] . ',' . $center[1] . '],{radius:200,color:"#20b2c4",weight:1}).addTo(map).bindTooltip(' . json_encode($wh['name']) . ');' : '') . '
-var layer=L.layerGroup().addTo(map),first=true;
-function esc(s){return String(s==null?"":s).replace(/[&<>"\']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","\'":"&#39;"}[c];});}
-function load(){fetch("?r=live.json",{credentials:"same-origin"}).then(function(r){return r.json();}).then(function(d){if(!d.ok)return;layer.clearLayers();var b=[];
-d.riders.forEach(function(r){if(r.lat===null)return;var m=L.circleMarker([r.lat,r.lng],{radius:9,color:"#fff",weight:2,fillColor:r.color,fillOpacity:1}).addTo(layer);
-m.bindPopup("<b>"+esc(r.name)+"</b><br>"+esc(r.status)+(r.order?"<br>Order: "+esc(r.order):"")+"<br>Speed: "+esc(r.speed)+" km/h<br>KM today: "+esc(r.km)+"<br>Delivered: "+esc(r.done)+" · Pending: "+esc(r.pending)+"<br>Battery: "+esc(r.battery)+"<br>Last update: "+esc(r.ago));b.push([r.lat,r.lng]);});
-if(first&&b.length){map.fitBounds(b,{padding:[40,40],maxZoom:14});first=false;}document.getElementById("upd").textContent="updated "+new Date().toLocaleTimeString("en-IN");}).catch(function(){});}
-load();setInterval(load,15000);})();</script>';
-Ui::page('Dashboard', 'dashboard', $body . $js, 'Today, ' . date('d-m-Y', time() + 19800) . ' (IST)', '<a class="eva-btn primary" href="?r=order_edit"><i class="fa-solid fa-plus"></i> Add order</a> <a class="eva-btn" href="?r=import"><i class="fa-solid fa-file-import"></i> Import CSV</a>', Ui::leafletHead());
+$js = '<script nonce="' . HMD_NONCE . '">HMMap.ready(function(){var map=HMMap.create("map",{center:[' . $center[0] . ',' . $center[1] . '],zoom:12}),esc=HMMap.esc;
+' . ($wh && $wh['lat'] !== null ? 'map.circle(' . $center[0] . ',' . $center[1] . ',200,{color:"#20b2c4"});' : '') . '
+var marks={},first=true;
+function load(){fetch("?r=live.json",{credentials:"same-origin"}).then(function(r){return r.json();}).then(function(d){if(!d.ok)return;var b=[],ids={};
+d.riders.forEach(function(r){if(r.lat===null)return;ids[r.id]=1;b.push([r.lat,r.lng]);var p="<b>"+esc(r.name)+"</b><br>"+esc(r.status)+(r.order?"<br>Order: "+esc(r.order):"")+"<br>Speed: "+esc(r.speed)+" km/h<br>KM today: "+esc(r.km)+"<br>Delivered: "+esc(r.done)+" · Pending: "+esc(r.pending)+"<br>Battery: "+(r.battery==null?"—":r.battery+"%")+"<br>Last update: "+esc(r.ago);
+var m=marks[r.id];if(m&&m.c===r.color){m.h.update(r.lat,r.lng,p,r.name);}else{if(m)m.h.remove();marks[r.id]={c:r.color,h:map.marker(r.lat,r.lng,{color:r.color,title:r.name,popup:p})};}});
+Object.keys(marks).forEach(function(k){if(!ids[k]){marks[k].h.remove();delete marks[k];}});
+if(first&&b.length){map.fit(b,14);first=false;}document.getElementById("upd").textContent="updated "+new Date().toLocaleTimeString("en-IN");}).catch(function(){});}
+load();setInterval(load,15000);});</script>';
+Ui::page('Dashboard', 'dashboard', $body . $js, 'Today, ' . date('d-m-Y', time() + 19800) . ' (IST)', '<a class="eva-btn primary" href="?r=order_edit"><i class="fa-solid fa-plus"></i> Add order</a> <a class="eva-btn" href="?r=import"><i class="fa-solid fa-file-import"></i> Import CSV</a>', Ui::mapHead());
